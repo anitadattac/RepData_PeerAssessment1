@@ -1,25 +1,102 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "PA1_template.Rmd"
+author: "Anita Datta Chowdhury"
+date: "April 5, 2017"
+output: html_document
 ---
 
 
-## Loading and preprocessing the data
+# 1. Loading the data
+
+```{r}
+setwd("C:/Users/anita/Desktop/DataScience/ProgrammingAssignment7")
+Url       <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
+download.file(Url,destfile = "./SourceData.zip")
+unzip(zipfile = "./SourceData.zip")
+readData <- read.csv("activity.csv", header = TRUE,stringsAsFactors = FALSE)
+dim(readData)
+head(readData)
+```
+
+# 2. What is mean total number of steps taken per day?
+
+## Here making a histogram of the total number of steps taken each day
+
+### Firsly, the histogram
+
+```{r}
+readDatasub<- readData[!is.na(readData$steps),]
+aggStep<- aggregate(readDatasub$steps, by = list(day=readDatasub$date),FUN=sum)
+hist(aggStep$x , col = "cyan", 
+     main = "Histogram of the total number of steps taken each day",
+     xlab = "Steps per Day")
+        
+```
+
+### Second, calculating and report the mean and median of the total number of steps taken per day
+
+* Mean
+```{r}
+mean(aggStep$x)
+```
+* Median
+```{r}
+median(aggStep$x)
+```
+# 3. What is the average daily activity pattern?
+
+```{r}
+stepsActivityPattern <- aggregate(steps ~ interval , data = readData, mean, na.rm = TRUE)
+plot(steps ~ interval , data = readData, type = "l", col = "sky blue",
+     main = "Average daily activity pattern", xlab = "Interval", ylab = " Number of Steps")
+```
+
+# 4. Imputing missing values
+
+total number of records in file `r nrow(readData)`
+Missing records in file `r sum(is.na(readData$steps))`
+
+Devise a strategy for filling in all of the missing values in the dataset.Creating a new dataset that is equal to the original dataset but with the missing data filled in
+
+```{r}
+library(plyr)
+library(reshape2)
+replaceNull <- function(x) {
+        replace(x, is.na(x), mean(x, na.rm = TRUE))
+}
+newDataSet <- ddply(readData, ~interval, transform, steps = replaceNull(steps))
+dim(newDataSet)
+head(newDataSet)
+```
+
+Below is the histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day with the new Dataset which is created above
+
+```{r}
+
+newDataSetdate <- aggregate(newDataSet[1], by = newDataSet[2], FUN= sum, na.rm = TRUE)
+hist(newDataSetdate$steps, col = "cyan", main ="Total number of steps taken each day with new data" , xlab = "Steps Per Day")
+```
+
+# 5. Are there differences in activity patterns between weekdays and weekends?
+
+A new factor variable in the dataset with two levels - "weekday" and "weekend" indicating whether a given date is a weekday or weekend day.
+```{r}
+newDataSet$dateP <- as.POSIXlt(newDataSet$date,format="%Y-%m-%d")
+newDataSet$day <- "Weekday"
+newDataSet$day [weekdays(newDataSet$dateP) %in% c("Saturday","Sunday")] <- "Weekend"
+```
+
+The following time series plots display the weekday and weekend data separately.
+```{r}
+newvar <- aggregate(newDataSet[1],
+                                   by=newDataSet[c(3,5)],
+                                   FUN=mean,
+                                   na.rm=TRUE)
+library(ggplot2)
+plota <- ggplot(data = newvar,
+               aes(x=interval,y=steps, color = interval))
+plota + geom_line() + facet_wrap(~day,nrow=2) + ggtitle("Time series plots display the weekday and weekend data separately") 
 
 
+```
 
-## What is mean total number of steps taken per day?
-
-
-
-## What is the average daily activity pattern?
-
-
-
-## Imputing missing values
-
-
-
-## Are there differences in activity patterns between weekdays and weekends?
